@@ -684,8 +684,7 @@ body.pres-mode .app-header{display:none;}
 .drive-status.err{color:#b3261e;font-weight:600;}
 </style>
 <!-- Google Drive integration (OAuth + Drive REST + Picker) — async so a blocked/slow Google (e.g. Safari Private Relay) never stops the page from loading -->
-<script src="https://apis.google.com/js/api.js" async defer></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Google Drive integration removed -->
 <!-- SheetJS for exporting the Nutrition Flow sheet as .xlsx -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" async defer></script>
 </head>
@@ -698,25 +697,7 @@ body.pres-mode .app-header{display:none;}
       <label for="patientName">Patient</label>
       <input id="patientName" class="patient-input" type="text" placeholder="Enter patient name" autocomplete="off"/>
     </div>
-    <div class="drive-bar">
-      <button type="button" class="drive-btn drive-btn--primary" id="driveConnect">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.71 3.5L1.15 15l3.43 6 6.56-11.5z"/><path d="M22.85 15L16.29 3.5h-6.86L16 15z"/><path d="M4.58 21h13.14l3.43-6H8.01z"/></svg>
-        Connect Drive
-      </button>
-      <button type="button" class="drive-btn" id="driveSave" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save to Drive
-      </button>
-      <button type="button" class="drive-btn" id="driveLoad" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        Load Patient
-      </button>
-      <button type="button" class="drive-btn" id="driveCalc">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18"/></svg>
-        Save Calc Sheet
-      </button>
-      <span class="drive-status" id="driveStatus">Not connected</span>
-    </div>
+    <!-- Drive bar removed -->
     <div class="header-date" id="headerDate"></div>
   </div>
   <nav class="tab-bar">
@@ -841,6 +822,9 @@ body.pres-mode .app-header{display:none;}
       <div class="pres-sched-head__total">
         <span class="pres-sched-total-num" id="psTotal">0</span>
         <span class="pres-sched-total-unit">visits total</span>
+        <span class="pres-sched-total-unit" style="margin:0 2px;opacity:.5;">·</span>
+        <span class="pres-sched-total-num" id="psTotalWk" style="font-size:1.5rem;">0</span>
+        <span class="pres-sched-total-unit">weeks</span>
       </div>
     </div>
     <div class="pres-sched-body">
@@ -1004,7 +988,7 @@ body.pres-mode .app-header{display:none;}
       <span class="nf-spacer"></span>
       <button class="nf-btn nf-btn--primary" id="nfSend" type="button">Send Total → Care Plan</button>
       <button class="nf-btn" id="nfPrint" type="button">Print Flow Sheet</button>
-      <button class="nf-btn" id="nfDrive" type="button">Save to Drive (Sheet)</button>
+
     </div>
     <div class="nf-table-wrap" id="nfTableWrap"></div>
   </div>
@@ -1074,6 +1058,7 @@ const PS_STACK = ['wellnessadj','ist','manualtherapy','trigenics','rehab','acupu
                   'nasalrelease','llxray','reexam','injection','custom','labs','nutrition'];
 const PS_NAME = {ist:'IST', manualtherapy:'Manual Therapy', rehab:'Corrective Exercise', reexam:'ReExams'};
 const PS_AGG = {
+  reexam:      ['reexam','reexamcash'],
   wellnessadj: ['cpt98941','cpt98940','th98941','th98940','wellnessadj'],
   ist:         ['ist','istcash','wellnessadj'],
   manualtherapy: ['manualtherapy','massage'],
@@ -1417,7 +1402,7 @@ function renderPres() {
   var hasSched = phases.some(function(p){return p.f>0&&p.w>0;});
   el('psNoSched').style.display  = hasSched ? 'none' : 'block';
   el('psSchedContent').style.display = hasSched ? 'block' : 'none';
-  el('psTotal').textContent = c.sv;
+  el('psTotal').textContent = c.sv; if(el('psTotalWk')) el('psTotalWk').textContent = totalW;
   var maxV = Math.max.apply(null, phases.map(function(p,i){return phVisits(p,i);}));
   if(maxV<1)maxV=1;
   phases.forEach(function(p,i) {
@@ -2659,7 +2644,7 @@ renderNFVersions();
 
   initPlans();   // start with one "Full Plan" version
   setStatus(configured() ? 'Not connected' : 'Drive not set up — add API keys', configured() ? '' : 'err');
-  autoConnect();
+  /* Drive auto-connect removed */
 })();
 
 </script>

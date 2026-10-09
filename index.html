@@ -245,7 +245,7 @@ input[type=number]{-moz-appearance:textfield;}
 .pres-sched-total-num{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:#fff;line-height:1;}
 .pres-sched-total-unit{font-size:.8rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;}
 .pres-sched-body{padding:14px 18px;}
-.pres-phases-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.pres-phases-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
 .pres-phase-card{background:var(--paper);border-radius:12px;padding:16px 14px;border-top:3px solid var(--line);text-align:center;opacity:.3;transition:opacity .2s;}
 .pres-phase-card.active{opacity:1;border-top-color:var(--navy);box-shadow:0 2px 12px -4px rgba(30,45,99,.2);}
 .pres-phase-card__label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--navy-light);margin-bottom:10px;}
@@ -538,7 +538,7 @@ body.pres-mode .app-header{display:none;}
 .csec{margin-bottom:8px;}
 .csec-t{font-family:'Playfair Display',Georgia,serif;font-size:8.5pt;font-weight:600;text-transform:uppercase;letter-spacing:.13em;color:#1E2D63;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #E8EBF2;display:flex;align-items:center;gap:7px;}
 .csec-t::before{content:'';width:13px;height:2.5px;background:#EEAF21;border-radius:2px;flex:0 0 auto;}
-.cph-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:7px;}
+.cph-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:7px;}
 .cph-card{background:#DDE1E8;border-radius:10px;padding:9px 10px;text-align:center;border-top:3px solid #1E2D63;}
 .cph-off{background:#FAFBFC;border-top-color:#E8EBF2;opacity:.3;}
 .cph-lbl{font-size:6pt;text-transform:uppercase;letter-spacing:.12em;color:#3D5FA0;font-weight:700;margin-bottom:3px;}
@@ -766,6 +766,7 @@ body.pres-mode .app-header{display:none;}
         <div class="schedule-row"><span class="sr-ph-label">Phase 1</span><input type="number" id="p0f" class="phase-input" min="0" max="7" step="1" placeholder="0"><span class="sr-x">x</span><input type="number" id="p0w" class="phase-input" min="0" step="1" placeholder="0"><span class="sr-total mono" id="p0v">0</span></div>
         <div class="schedule-row"><span class="sr-ph-label">Phase 2</span><input type="number" id="p1f" class="phase-input" min="0" max="7" step="1" placeholder="0"><span class="sr-x">x</span><input type="number" id="p1w" class="phase-input" min="0" step="1" placeholder="0"><span class="sr-total mono" id="p1v">0</span></div>
         <div class="schedule-row"><span class="sr-ph-label">Phase 3</span><input type="number" id="p2f" class="phase-input" min="0" max="7" step="1" placeholder="0"><span class="sr-x">x</span><input type="number" id="p2w" class="phase-input" min="0" step="1" placeholder="0"><span class="sr-total mono" id="p2v">0</span></div>
+        <div class="schedule-row"><span class="sr-ph-label">Phase 4<span style="display:block;font-size:.6rem;font-weight:600;color:var(--navy-light);text-transform:none;letter-spacing:0;">every other wk</span></span><input type="number" id="p3f" class="phase-input" min="0" max="7" step="1" placeholder="0"><span class="sr-x">x</span><input type="number" id="p3w" class="phase-input" min="0" step="1" placeholder="0"><span class="sr-total mono" id="p3v">0</span></div>
       </div>
       <div class="schedule-totals"><span class="schedule-totals__text">Total: <strong class="mono" id="schedV">0</strong> visits over <strong class="mono" id="schedW">0</strong> weeks</span></div>
     </div>
@@ -849,6 +850,7 @@ body.pres-mode .app-header{display:none;}
           <div class="pres-phase-card" id="psP0"></div>
           <div class="pres-phase-card" id="psP1"></div>
           <div class="pres-phase-card" id="psP2"></div>
+          <div class="pres-phase-card" id="psP3"></div>
         </div>
         <div class="pres-timeline-bar"><div class="pres-timeline-fill" id="psTLFill" style="width:0%"></div></div>
         <div class="pres-timeline-labels"><span>Week 1</span><span id="psTLEnd">—</span></div>
@@ -1089,7 +1091,7 @@ let deductibleMet = 0;    // how much of the deductible already met (admin-enter
 let nutritionType = '';   // free-text nutrition description (admin-entered)
 var sigResize = null;     // set by the signature pad; called when Patient View becomes visible
 var psSigned = false;     // true once the patient actually draws on the care-plan signature pad
-let phases = [{f:0,w:0},{f:0,w:0},{f:0,w:0}];
+let phases = [{f:0,w:0},{f:0,w:0},{f:0,w:0},{f:0,w:0}];
 let selPlan = 'standard';
 let psSelPlan = 'standard';
 let psShowAll = false;
@@ -1311,8 +1313,10 @@ function setDeductible(v) { var n=parseFloat(v); if(isNaN(n)||n<0)n=0; deductibl
 function setDeductibleMet(v) { var n=parseFloat(v); if(isNaN(n)||n<0)n=0; deductibleMet=n; render(); }
 
 // ── COMPUTE ───────────────────────────────────────────────────────
+function phVisits(p,i){ return (i===3) ? (p.f||0)*Math.ceil((p.w||0)/2) : (p.f||0)*(p.w||0); }
+function phFreqLabel(p,i){ return (i===3) ? ((p.f===1?'Every other week':p.f+'×/wk every other wk')+' · '+p.w+' wks') : (p.f+'×/wk for '+p.w+' week'+(p.w===1?'':'s')); }
 function compute() {
-  var sv = phases.reduce(function(s,p){return s+p.f*p.w;},0);
+  var sv = phases.reduce(function(s,p,i){return s+phVisits(p,i);},0);
   ITEMS.forEach(function(item) {
     if(syncSet.has(item.id)) {
       item.qty = sv;
@@ -1345,7 +1349,7 @@ function render() {
   var c = compute();
   // Schedule
   phases.forEach(function(p,i) {
-    var v = el('p'+i+'v'); if(v) v.textContent = p.f*p.w;
+    var v = el('p'+i+'v'); if(v) v.textContent = phVisits(p,i);
   });
   if(el('schedV')) el('schedV').textContent = c.sv;
   if(el('schedW')) el('schedW').textContent = phases.reduce(function(s,p){return s+p.w;},0);
@@ -1414,16 +1418,16 @@ function renderPres() {
   el('psNoSched').style.display  = hasSched ? 'none' : 'block';
   el('psSchedContent').style.display = hasSched ? 'block' : 'none';
   el('psTotal').textContent = c.sv;
-  var maxV = Math.max.apply(null, phases.map(function(p){return p.f*p.w;}));
+  var maxV = Math.max.apply(null, phases.map(function(p,i){return phVisits(p,i);}));
   if(maxV<1)maxV=1;
   phases.forEach(function(p,i) {
-    var v = p.f*p.w;
+    var v = phVisits(p,i);
     var card = el('psP'+i);
     if(v>0) {
       card.classList.add('active');
       card.innerHTML =
         '<div class="pres-phase-card__label">Phase '+(i+1)+'</div>' +
-        '<div class="pres-phase-card__freqline">'+p.f+'×/wk for '+p.w+' week'+(p.w===1?'':'s')+'</div>' +
+        '<div class="pres-phase-card__freqline">'+phFreqLabel(p,i)+'</div>' +
         '<div class="pres-phase-card__visits">'+v+' visit'+(v===1?'':'s')+' total</div>';
     } else {
       card.classList.remove('active');
@@ -1547,7 +1551,7 @@ function isFinPlan(p) {
 // ── EVENTS ───────────────────────────────────────────────────────
 document.querySelectorAll('.phase-input').forEach(function(inp) {
   inp.addEventListener('input', function() {
-    phases = [0,1,2].map(function(i) {
+    phases = [0,1,2,3].map(function(i) {
       return {f:parseInt(el('p'+i+'f')&&el('p'+i+'f').value)||0, w:parseInt(el('p'+i+'w')&&el('p'+i+'w').value)||0};
     });
     render();
@@ -1642,7 +1646,7 @@ function buildCarePlanOverlayHTML() {
   var name = el('patientName').value.trim() || '___________________________';
   var now = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   var c = compute();
-  var sv = phases.reduce(function(s,p){return s+p.f*p.w;},0);
+  var sv = phases.reduce(function(s,p,i){return s+phVisits(p,i);},0);
   var totalW = phases.reduce(function(s,p){return s+p.w;},0);
   var hasSched = phases.some(function(p){return p.f>0&&p.w>0;});
   var logoImg = document.querySelector('img[alt="Motus Health"]');
@@ -1662,8 +1666,8 @@ function buildCarePlanOverlayHTML() {
   // Build print sections
   // Visit schedule \u2014 mirrors the Patient View: per-phase "N\u00d7/wk for W weeks" + total visits + timeline
   var phCards = phases.map(function(p,ix) {
-    var v = p.f*p.w;
-    if(v>0){return '<div class="cph-card"><div class="cph-lbl">Phase '+(ix+1)+'</div><div class="cph-freqline">'+p.f+'\u00d7/wk for '+p.w+' week'+(p.w===1?'':'s')+'</div><div class="cph-vis">'+v+' visit'+(v===1?'':'s')+' total</div></div>';}
+    var v = phVisits(p,ix);
+    if(v>0){return '<div class="cph-card"><div class="cph-lbl">Phase '+(ix+1)+'</div><div class="cph-freqline">'+phFreqLabel(p,ix)+'</div><div class="cph-vis">'+v+' visit'+(v===1?'':'s')+' total</div></div>';}
     return '<div class="cph-card cph-off"><div class="cph-lbl">Phase '+(ix+1)+'</div><div class="cph-freqline cph-na">Not used</div></div>';
   }).join('');
   var schedH = hasSched?('<div class="csec"><div class="cph-head"><span class="csec-t" style="border:0;margin:0;padding:0;">Visit Frequency &amp; Duration</span><span><span class="cph-total-num">'+sv+'</span> <span class="cph-total-unit">visits total</span></span></div><div class="cph-grid">'+phCards+'</div><div class="cph-tl"><div class="cph-tl-fill" style="width:100%"></div></div><div class="cph-tl-labels"><span>Week 1</span><span>Week '+totalW+'</span></div></div>'):'';
@@ -1745,9 +1749,9 @@ function buildAdminSummaryHTML(){
   var totalW = phases.reduce(function(s,p){return s+p.w;},0);
 
   var phRows = phases.map(function(p,i){
-    var v = p.f*p.w;
+    var v = phVisits(p,i);
     if(v<=0) return '';
-    return '<tr><td>Phase '+(i+1)+'</td><td>'+p.f+'×/week</td><td>'+p.w+' week'+(p.w===1?'':'s')+'</td><td class="r">'+v+'</td></tr>';
+    return '<tr><td>Phase '+(i+1)+'</td><td>'+(i===3?p.f+'×/wk (EOW)':p.f+'×/week')+'</td><td>'+p.w+' week'+(p.w===1?'':'s')+'</td><td class="r">'+v+'</td></tr>';
   }).filter(Boolean).join('');
   if(!phRows) phRows = '<tr><td colspan="4" style="color:#9098A6;text-align:center;">No visit schedule entered yet</td></tr>';
 
@@ -1915,7 +1919,7 @@ function applyTemplate(tpl) {
     if(fEl) fEl.value = p.f || '';
     if(wEl) wEl.value = p.w || '';
   });
-  phases = tpl.phases.map(function(p){ return {f:p.f||0, w:p.w||0}; });
+  phases = tpl.phases.map(function(p){ return {f:p.f||0, w:p.w||0}; }); while(phases.length<4) phases.push({f:0,w:0}); if(el('p3f'))el('p3f').value=''; if(el('p3w'))el('p3w').value='';
   // Reset all quantities
   ITEMS.forEach(function(item){ item.qty = 0; });
   // Set selected services
@@ -1924,7 +1928,7 @@ function applyTemplate(tpl) {
     if(item) item.qty = 1;
   });
   // Set insurance items (qty = to schedule visits)
-  var sv = phases.reduce(function(s,p){return s+p.f*p.w;},0);
+  var sv = phases.reduce(function(s,p,i){return s+phVisits(p,i);},0);
   tpl.insurance.forEach(function(sid) {
     var item = ITEMS.find(function(i){ return i.id===sid; });
     if(item) item.qty = sv;
@@ -1950,7 +1954,7 @@ function applyTemplate(tpl) {
 
 function clearTemplate() {
   activeTemplate = null;
-  phases = [{f:0,w:0},{f:0,w:0},{f:0,w:0}];
+  phases = [{f:0,w:0},{f:0,w:0},{f:0,w:0},{f:0,w:0}];
   ITEMS.forEach(function(item){ item.qty = 0; });
   [0,1,2].forEach(function(i) {
     var fEl = el('p'+i+'f'), wEl = el('p'+i+'w');
@@ -2269,10 +2273,10 @@ renderNFVersions();
     if(typeof d.deductibleMet === 'number') deductibleMet = d.deductibleMet;
     if(typeof d.nutritionType === 'string') nutritionType = d.nutritionType;
     if(Array.isArray(d.phases)){
-      phases = d.phases.slice(0,3).map(function(p){ return { f: p.f||0, w: p.w||0 }; });
-      while(phases.length < 3) phases.push({ f:0, w:0 });
+      phases = d.phases.slice(0,4).map(function(p){ return { f: p.f||0, w: p.w||0 }; });
+      while(phases.length < 4) phases.push({ f:0, w:0 });
     }
-    for(var i=0;i<3;i++){
+    for(var i=0;i<4;i++){
       if(el('p'+i+'f')) el('p'+i+'f').value = phases[i].f || '';
       if(el('p'+i+'w')) el('p'+i+'w').value = phases[i].w || '';
     }
